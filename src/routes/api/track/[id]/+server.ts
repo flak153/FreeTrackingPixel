@@ -4,8 +4,12 @@ import { pixels, pixelEvents, pixelCreators } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { parseUserAgent, getLocationFromIP } from '$lib/server/tracking';
 
-// 1x1 transparent PNG
-const TRANSPARENT_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+// Small decorative dot image (3x3 pixels with a light gray dot in center)
+// This looks less suspicious than a 1x1 transparent pixel
+const TRACKING_IMAGE = Buffer.from(
+	'iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAHElEQVQIHWP4//8/AzYwCkz8z4AFjAITYcABJgAAXwMJAJ7mlygAAAAASUVORK5CYII=',
+	'base64'
+);
 
 export const GET: RequestHandler = async ({ params, request, getClientAddress }) => {
 	const { id } = params;
@@ -15,7 +19,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 		if (!uuidRegex.test(id)) {
 			// Return GIF for invalid UUIDs
-			return new Response(TRANSPARENT_PNG, {
+			return new Response(TRACKING_IMAGE, {
 				headers: {
 					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
@@ -27,7 +31,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		const [pixel] = await db.select().from(pixels).where(eq(pixels.id, id)).limit(1);
 		
 		if (!pixel) {
-			return new Response(TRANSPARENT_PNG, {
+			return new Response(TRACKING_IMAGE, {
 				headers: {
 					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
@@ -37,7 +41,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		
 		// Check if pixel is expired
 		if (pixel.expiresAt && new Date() > pixel.expiresAt) {
-			return new Response(TRANSPARENT_PNG, {
+			return new Response(TRACKING_IMAGE, {
 				headers: {
 					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
@@ -63,7 +67,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		
 		// If this is the creator, return the image without tracking
 		if (creator) {
-			return new Response(TRANSPARENT_PNG, {
+			return new Response(TRACKING_IMAGE, {
 				headers: {
 					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
@@ -113,7 +117,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		});
 		
 		// Return the transparent GIF
-		return new Response(TRANSPARENT_PNG, {
+		return new Response(TRACKING_IMAGE, {
 			headers: {
 				'Content-Type': 'image/png',
 				'Cache-Control': 'no-store, no-cache, must-revalidate, private',
@@ -124,7 +128,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 	} catch (error) {
 		console.error('Error tracking pixel:', error);
 		// Still return the GIF even if tracking fails
-		return new Response(TRANSPARENT_PNG, {
+		return new Response(TRACKING_IMAGE, {
 			headers: {
 				'Content-Type': 'image/png',
 				'Cache-Control': 'no-store, no-cache, must-revalidate, private'
