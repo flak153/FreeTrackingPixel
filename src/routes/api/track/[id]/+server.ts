@@ -4,10 +4,9 @@ import { pixels, pixelEvents, pixelCreators } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { parseUserAgent, getLocationFromIP } from '$lib/server/tracking';
 
-// Small decorative dot image (3x3 pixels with a light gray dot in center)
-// This looks less suspicious than a 1x1 transparent pixel
+// 5x5 blue square - looks like a small bullet point or icon
 const TRACKING_IMAGE = Buffer.from(
-	'iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAAAHElEQVQIHWP4//8/AzYwCkz8z4AFjAITYcABJgAAXwMJAJ7mlygAAAAASUVORK5CYII=',
+	'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
 	'base64'
 );
 
