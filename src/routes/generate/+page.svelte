@@ -216,7 +216,13 @@
 		<div class="space-y-6">
 			<Alert>
 				<AlertDescription>
-					Your tracking pixel has been generated successfully! Copy the code below and embed it in your email.
+					Your tracking pixel has been generated successfully!
+				</AlertDescription>
+			</Alert>
+			
+			<Alert variant="destructive">
+				<AlertDescription>
+					<strong>⚠️ Gmail Users:</strong> Copy-pasting images doesn't work! Gmail converts them to attachments. You must use "Insert → Photo → Web Address (URL)" and paste the tracking URL.
 				</AlertDescription>
 			</Alert>
 
@@ -234,8 +240,8 @@
 						</div>
 						<div class="bg-muted p-4 rounded-md space-y-4">
 							<div>
-								<p class="text-sm font-medium mb-2">Option 1: Copy pixel image</p>
-								<p class="text-xs text-muted-foreground mb-2">Copy and paste directly into your email composer:</p>
+								<p class="text-sm font-medium mb-2">Option 1: Insert image by URL (Recommended for Gmail)</p>
+								<p class="text-xs text-muted-foreground mb-2">Use your email's "Insert Image" feature with this URL:</p>
 								<div class="flex items-center gap-4">
 									<div class="relative inline-block">
 										<div class="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"></div>
@@ -265,8 +271,8 @@
 								</div>
 							</div>
 							<div>
-								<p class="text-sm font-medium mb-2">Option 2: Insert image by URL</p>
-								<p class="text-xs text-muted-foreground mb-2">Use your email editor's "Insert Image" feature with this URL:</p>
+								<p class="text-sm font-medium mb-2">Option 2: HTML embed code</p>
+								<p class="text-xs text-muted-foreground mb-2">For HTML email editors, use this code:</p>
 								<div class="flex items-start gap-2">
 									<code class="bg-background p-2 rounded text-xs flex-1 select-all break-all">{pixelData.trackingUrl}</code>
 									<Button
