@@ -66,6 +66,7 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 		// Store creator fingerprint data if available
 		if (fingerprint && browserData) {
 			try {
+				console.log(`[PIXEL CREATE] Storing creator IP: ${clientIp} for pixel: ${pixel.id}`);
 				
 				// Extract WebGL info if available
 				const webglInfo = fingerprint.components?.webgl || {};

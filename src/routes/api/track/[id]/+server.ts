@@ -12,6 +12,7 @@ const TRACKING_IMAGE = Buffer.from(
 
 export const GET: RequestHandler = async ({ params, request, getClientAddress }) => {
 	const { id } = params;
+	console.log(`[TRACKING] Pixel accessed: ${id}`);
 	
 	try {
 		// Validate UUID format
@@ -53,6 +54,10 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		const referer = request.headers.get('referer') || null;
 		const clientIp = getClientAddress();
 		
+		console.log(`[TRACKING] Client IP: ${clientIp}`);
+		console.log(`[TRACKING] User Agent: ${userAgent}`);
+		console.log(`[TRACKING] Referer: ${referer}`);
+		
 		// Check if this is the pixel creator's machine
 		const [creator] = await db.select()
 			.from(pixelCreators)
@@ -66,6 +71,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		
 		// If this is the creator, return the image without tracking
 		if (creator) {
+			console.log(`[TRACKING] Skipping - request from creator IP: ${clientIp}`);
 			return new Response(TRACKING_IMAGE, {
 				headers: {
 					'Content-Type': 'image/png',
@@ -100,6 +106,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		const isUnique = existingEvent.length === 0;
 		
 		// Record the event with enhanced tracking data
+		console.log(`[TRACKING] Recording event - isUnique: ${isUnique}`);
 		await db.insert(pixelEvents).values({
 			pixelId: id,
 			userAgent,
@@ -114,6 +121,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 			city: location.city,
 			region: location.region
 		});
+		console.log(`[TRACKING] Event recorded successfully`);
 		
 		// Return the transparent GIF
 		return new Response(TRACKING_IMAGE, {
