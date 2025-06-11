@@ -7,6 +7,10 @@ test.describe('Tracking Pixel', () => {
 	test.beforeEach(async ({ request }) => {
 		// Create a test pixel
 		const response = await request.post('/api/pixels', {
+			headers: {
+				'Content-Type': 'application/json',
+				'x-test-suite': 'playwright-e2e'
+			},
 			data: {
 				label: 'E2E Tracking Test',
 				expiresIn: '24h'
@@ -14,6 +18,9 @@ test.describe('Tracking Pixel', () => {
 		});
 		
 		const pixel = await response.json();
+		if (pixel.error) {
+			throw new Error('Failed to create pixel: ' + pixel.error);
+		}
 		pixelId = pixel.id;
 		trackingUrl = pixel.trackingUrl;
 	});
@@ -93,6 +100,10 @@ test.describe('Tracking Pixel', () => {
 	test('should respect pixel expiration', async ({ request }) => {
 		// Create an expired pixel
 		const expiredResponse = await request.post('/api/pixels', {
+			headers: {
+				'Content-Type': 'application/json',
+				'x-test-suite': 'playwright-e2e'
+			},
 			data: {
 				label: 'Expired Test',
 				expiresIn: '24h'

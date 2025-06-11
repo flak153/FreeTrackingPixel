@@ -1,6 +1,30 @@
 import { describe, it, expect, vi } from 'vitest';
 import { parseUserAgent, getLocationFromIP } from './tracking';
 
+// Mock geoip-lite
+vi.mock('geoip-lite', () => ({
+	default: {
+		lookup: vi.fn((ip: string) => {
+			// Return different results based on IP for testing
+			if (ip === '8.8.8.8') {
+				return {
+					country: 'US',
+					city: 'Mountain View',
+					region: 'CA'
+				};
+			}
+			if (ip === '75.75.75.75') {
+				return {
+					country: 'GB',
+					city: 'London',
+					region: 'England'
+				};
+			}
+			return null;
+		})
+	}
+}));
+
 describe('parseUserAgent', () => {
 	it('should detect Chrome browser', () => {
 		const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -15,7 +39,7 @@ describe('parseUserAgent', () => {
 		const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 		const result = parseUserAgent(ua);
 		
-		expect(result.browser).toBe('Safari');
+		expect(result.browser).toBe('Mobile Safari');
 		expect(result.os).toBe('iOS');
 		expect(result.deviceType).toBe('mobile');
 	});
@@ -38,42 +62,40 @@ describe('parseUserAgent', () => {
 });
 
 describe('getLocationFromIP', () => {
-	it('should fetch location data from IP', async () => {
-		// Mock fetch
-		global.fetch = vi.fn().mockResolvedValueOnce({
-			ok: true,
-			json: async () => ({
-				country_code: 'US',
-				city: 'New York',
-				region: 'New York'
-			})
-		} as Response);
+	it('should return local data for localhost IPs', async () => {
+		const result = await getLocationFromIP('127.0.0.1');
+		
+		expect(result.countryCode).toBe('US');
+		expect(result.city).toBe('Local');
+		expect(result.region).toBe('Development');
+	});
 
+	it('should return US data for Google DNS IP', async () => {
 		const result = await getLocationFromIP('8.8.8.8');
 		
 		expect(result.countryCode).toBe('US');
-		expect(result.city).toBe('New York');
-		expect(result.region).toBe('New York');
-		expect(fetch).toHaveBeenCalledWith('https://ipapi.co/8.8.8.8/json/');
+		expect(result.city).toBe('Mountain View');
+		expect(result.region).toBe('CA');
 	});
 
-	it('should handle API errors gracefully', async () => {
-		global.fetch = vi.fn().mockRejectedValueOnce(new Error('Network error'));
-
-		const result = await getLocationFromIP('8.8.8.8');
+	it('should return GB data for UK IP', async () => {
+		const result = await getLocationFromIP('75.75.75.75');
 		
-		expect(result.countryCode).toBeNull();
-		expect(result.city).toBeNull();
-		expect(result.region).toBeNull();
+		expect(result.countryCode).toBe('GB');
+		expect(result.city).toBe('London');
+		expect(result.region).toBe('England');
 	});
 
-	it('should handle non-OK responses', async () => {
-		global.fetch = vi.fn().mockResolvedValueOnce({
-			ok: false,
-			status: 429
-		} as Response);
+	it('should handle private network IPs', async () => {
+		const result = await getLocationFromIP('192.168.1.100');
+		
+		expect(result.countryCode).toBe('US');
+		expect(result.city).toBe('Local');
+		expect(result.region).toBe('Development');
+	});
 
-		const result = await getLocationFromIP('8.8.8.8');
+	it('should handle unknown IPs', async () => {
+		const result = await getLocationFromIP('255.255.255.255');
 		
 		expect(result.countryCode).toBeNull();
 		expect(result.city).toBeNull();

@@ -1,24 +1,35 @@
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { pixels, pixelEvents } from '$lib/server/db/schema';
+import { pixels, pixelEvents, pixelCreators } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { createHash } from 'crypto';
 import { parseUserAgent, getLocationFromIP } from '$lib/server/tracking';
 
-// 1x1 transparent GIF
-const TRANSPARENT_GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+// 1x1 transparent PNG
+const TRANSPARENT_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 export const GET: RequestHandler = async ({ params, request, getClientAddress }) => {
 	const { id } = params;
 	
 	try {
+		// Validate UUID format
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+		if (!uuidRegex.test(id)) {
+			// Return GIF for invalid UUIDs
+			return new Response(TRANSPARENT_PNG, {
+				headers: {
+					'Content-Type': 'image/png',
+					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+				}
+			});
+		}
+		
 		// Check if pixel exists and is not expired
 		const [pixel] = await db.select().from(pixels).where(eq(pixels.id, id)).limit(1);
 		
 		if (!pixel) {
-			return new Response(TRANSPARENT_GIF, {
+			return new Response(TRANSPARENT_PNG, {
 				headers: {
-					'Content-Type': 'image/gif',
+					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
 				}
 			});
@@ -26,9 +37,9 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		
 		// Check if pixel is expired
 		if (pixel.expiresAt && new Date() > pixel.expiresAt) {
-			return new Response(TRANSPARENT_GIF, {
+			return new Response(TRANSPARENT_PNG, {
 				headers: {
-					'Content-Type': 'image/gif',
+					'Content-Type': 'image/png',
 					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
 				}
 			});
@@ -39,8 +50,26 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		const referer = request.headers.get('referer') || null;
 		const clientIp = getClientAddress();
 		
-		// Hash IP for privacy
-		const ipHash = clientIp ? createHash('sha256').update(clientIp).digest('hex') : null;
+		// Check if this is the pixel creator's machine
+		const [creator] = await db.select()
+			.from(pixelCreators)
+			.where(
+				and(
+					eq(pixelCreators.pixelId, id),
+					eq(pixelCreators.clientIp, clientIp)
+				)
+			)
+			.limit(1);
+		
+		// If this is the creator, return the image without tracking
+		if (creator) {
+			return new Response(TRANSPARENT_PNG, {
+				headers: {
+					'Content-Type': 'image/png',
+					'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+				}
+			});
+		}
 		
 		// Parse user agent for browser/device info
 		const trackingData = parseUserAgent(userAgent);
@@ -59,7 +88,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 			.where(
 				and(
 					eq(pixelEvents.pixelId, id),
-					eq(pixelEvents.ipHash, ipHash),
+					eq(pixelEvents.clientIp, clientIp),
 					// Check if opened in last 24 hours
 				)
 			)
@@ -71,7 +100,7 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		await db.insert(pixelEvents).values({
 			pixelId: id,
 			userAgent,
-			ipHash,
+			clientIp,
 			referer,
 			isUnique,
 			browser: trackingData.browser,
@@ -84,9 +113,9 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		});
 		
 		// Return the transparent GIF
-		return new Response(TRANSPARENT_GIF, {
+		return new Response(TRANSPARENT_PNG, {
 			headers: {
-				'Content-Type': 'image/gif',
+				'Content-Type': 'image/png',
 				'Cache-Control': 'no-store, no-cache, must-revalidate, private',
 				'Pragma': 'no-cache',
 				'Expires': '0'
@@ -95,9 +124,9 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 	} catch (error) {
 		console.error('Error tracking pixel:', error);
 		// Still return the GIF even if tracking fails
-		return new Response(TRANSPARENT_GIF, {
+		return new Response(TRANSPARENT_PNG, {
 			headers: {
-				'Content-Type': 'image/gif',
+				'Content-Type': 'image/png',
 				'Cache-Control': 'no-store, no-cache, must-revalidate, private'
 			}
 		});

@@ -40,6 +40,17 @@
 		refreshing = true;
 		await fetchStats();
 	}
+
+	async function shareStats() {
+		try {
+			const url = window.location.href;
+			await navigator.clipboard.writeText(url);
+			alert('Stats link copied to clipboard!');
+		} catch (e) {
+			console.error('Failed to copy:', e);
+			alert('Failed to copy link. Please copy from the address bar.');
+		}
+	}
 	
 	onMount(() => {
 		fetchStats();
@@ -89,11 +100,11 @@
 					{/if}
 				</div>
 				<div class="flex gap-2">
-					<Button variant="outline" size="sm" on:click={refresh} disabled={refreshing}>
+					<Button variant="outline" size="sm" onclick={refresh} disabled={refreshing}>
 						<RefreshCw class="w-4 h-4 mr-2 {refreshing ? 'animate-spin' : ''}" />
 						Refresh
 					</Button>
-					<Button variant="outline" size="sm">
+					<Button variant="outline" size="sm" onclick={shareStats}>
 						<Share2 class="w-4 h-4 mr-2" />
 						Share
 					</Button>
@@ -155,7 +166,7 @@
 									class="flex-1 bg-blue-500 hover:bg-blue-600 transition-colors rounded-t"
 									style="height: {height}%"
 									title="{point.count} opens at {formatTime(point.time)}"
-								/>
+								></div>
 							{/each}
 						</div>
 					</CardContent>
@@ -224,7 +235,7 @@
 												<div 
 													class="bg-blue-500 h-2 rounded-full" 
 													style="width: {(client.count / stats.stats.total) * 100}%"
-												/>
+												></div>
 											</div>
 											<span class="text-sm text-muted-foreground w-12 text-right">{client.count}</span>
 										</div>
@@ -254,7 +265,7 @@
 												<div 
 													class="bg-purple-500 h-2 rounded-full" 
 													style="width: {(device.count / stats.stats.total) * 100}%"
-												/>
+												></div>
 											</div>
 											<span class="text-sm text-muted-foreground w-12 text-right">{device.count}</span>
 										</div>

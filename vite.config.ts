@@ -2,10 +2,12 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
+import devtoolsJson from 'vite-plugin-devtools-json';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [
+		devtoolsJson(),
 		tailwindcss(),
 		sveltekit(),
 		paraglideVitePlugin({

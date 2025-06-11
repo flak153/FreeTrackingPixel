@@ -1,4 +1,5 @@
-import UAParser from 'ua-parser-js';
+import { UAParser } from 'ua-parser-js';
+import geoip from 'geoip-lite';
 
 export interface TrackingData {
 	browser: string | null;
@@ -106,32 +107,35 @@ function detectEmailClient(userAgent: string): string | null {
 	return null;
 }
 
-// IP Geolocation service (you'll need to add an API key for a service like ipapi.co)
+// IP geolocation using geoip-lite library
 export async function getLocationFromIP(ip: string): Promise<{
 	countryCode: string | null;
 	city: string | null;
 	region: string | null;
 }> {
-	try {
-		// Using ipapi.co free tier (1000 requests/day)
-		const response = await fetch(`https://ipapi.co/${ip}/json/`);
-		if (!response.ok) {
-			throw new Error('Failed to get location');
-		}
-		
-		const data = await response.json();
-		
+	// For testing and local development, return mock data
+	if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.')) {
 		return {
-			countryCode: data.country_code || null,
-			city: data.city || null,
-			region: data.region || null
+			countryCode: 'US',
+			city: 'Local',
+			region: 'Development'
 		};
-	} catch (error) {
-		console.error('Error getting location from IP:', error);
+	}
+	
+	// Use geoip-lite for geolocation
+	const geo = geoip.lookup(ip);
+	
+	if (!geo) {
 		return {
 			countryCode: null,
 			city: null,
 			region: null
 		};
 	}
+	
+	return {
+		countryCode: geo.country || null,
+		city: geo.city || null,
+		region: geo.region || null
+	};
 }

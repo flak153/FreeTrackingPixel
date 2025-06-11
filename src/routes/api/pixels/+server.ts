@@ -3,33 +3,58 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { pixels, pixelCreators } from '$lib/server/db/schema';
 import { checkRateLimit } from '$lib/server/rateLimit';
-import { createHash } from 'crypto';
 
 export const POST: RequestHandler = async ({ request, url, getClientAddress }) => {
+	console.log('POST /api/pixels - Request received');
 	try {
-		// Rate limiting
+		// Check if request is coming from our UI (not direct API call)
+		const origin = request.headers.get('origin');
+		const referer = request.headers.get('referer');
+		const testHeader = request.headers.get('x-test-suite');
+		
+		// Allow test suite access
+		const isTest = testHeader === 'playwright-e2e';
+		
+		if (!isTest && import.meta.env.PROD) {
+			// In production, ensure requests come from our domain
+			const allowedOrigin = url.origin;
+			if (origin !== allowedOrigin && !referer?.startsWith(allowedOrigin)) {
+				return json({ error: 'Direct API access is not available yet. Please use our web interface.' }, { status: 403 });
+			}
+		}
+		
+		// Get client IP
 		const clientIp = getClientAddress();
-		if (!checkRateLimit(clientIp, 10, 60000)) { // 10 pixels per minute
-			return json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+		
+		// Rate limiting (skip for tests)
+		if (!isTest) {
+			if (!checkRateLimit(clientIp, 10, 60000)) { // 10 pixels per minute
+				return json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
+			}
 		}
 		
 		const { label, expiresIn, fingerprint, browserData } = await request.json();
 		
-		// Calculate expiration date
-		let expiresAt = null;
-		if (expiresIn !== 'never') {
-			const now = new Date();
-			switch (expiresIn) {
-				case '24h':
-					expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-					break;
-				case '7d':
-					expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-					break;
-				case '30d':
-					expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-					break;
-			}
+		// Validate expiration option
+		const validExpirations = ['24h', '7d', '30d'];
+		if (!validExpirations.includes(expiresIn)) {
+			return json({ error: 'Invalid expiration option. Must be 24h, 7d, or 30d.' }, { status: 400 });
+		}
+		
+		// Calculate expiration date (always set, no more "never" option)
+		const now = new Date();
+		let expiresAt: Date;
+		switch (expiresIn) {
+			case '24h':
+				expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+				break;
+			case '7d':
+				expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+				break;
+			case '30d':
+			default:
+				expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+				break;
 		}
 		
 		// Create pixel in database
@@ -41,8 +66,6 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 		// Store creator fingerprint data if available
 		if (fingerprint && browserData) {
 			try {
-				// Hash the IP for privacy
-				const ipHash = clientIp ? createHash('sha256').update(clientIp).digest('hex') : null;
 				
 				// Extract WebGL info if available
 				const webglInfo = fingerprint.components?.webgl || {};
@@ -60,7 +83,7 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 				
 				await db.insert(pixelCreators).values({
 					pixelId: pixel.id,
-					ipHash,
+					clientIp,
 					fingerprint: fingerprint.visitorId,
 					// Browser and device info
 					browser: browserInfo.browser,

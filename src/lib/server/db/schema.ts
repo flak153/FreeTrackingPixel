@@ -13,7 +13,7 @@ export const pixelEvents = pgTable('pixel_events', {
 	pixelId: uuid('pixel_id').references(() => pixels.id, { onDelete: 'cascade' }).notNull(),
 	openedAt: timestamp('opened_at', { withTimezone: true }).defaultNow().notNull(),
 	userAgent: text('user_agent'),
-	ipHash: varchar('ip_hash', { length: 64 }),
+	clientIp: varchar('client_ip', { length: 45 }), // Max length for IPv6
 	referer: text('referer'),
 	countryCode: varchar('country_code', { length: 2 }),
 	city: varchar('city', { length: 100 }),
@@ -30,8 +30,8 @@ export const pixelCreators = pgTable('pixel_creators', {
 	id: serial('id').primaryKey(),
 	pixelId: uuid('pixel_id').references(() => pixels.id, { onDelete: 'cascade' }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-	ipHash: varchar('ip_hash', { length: 64 }),
-	fingerprint: varchar('fingerprint', { length: 64 }),
+	clientIp: varchar('client_ip', { length: 45 }), // Max length for IPv6
+	fingerprint: text('fingerprint'),
 	// Browser and device info
 	browser: varchar('browser', { length: 100 }),
 	browserVersion: varchar('browser_version', { length: 50 }),
@@ -62,9 +62,9 @@ export const pixelCreators = pgTable('pixel_creators', {
 	webglVendor: text('webgl_vendor'),
 	webglRenderer: text('webgl_renderer'),
 	// Canvas fingerprint and other hashes
-	canvasHash: varchar('canvas_hash', { length: 64 }),
-	audioHash: varchar('audio_hash', { length: 64 }),
-	fontsHash: varchar('fonts_hash', { length: 64 }),
+	canvasHash: text('canvas_hash'),
+	audioHash: text('audio_hash'),
+	fontsHash: text('fonts_hash'),
 	// Full fingerprint data for analysis
 	fullFingerprint: text('full_fingerprint') // JSON data
 });

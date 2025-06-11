@@ -2,11 +2,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select/index.js';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select/index.js';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Copy, QrCode, ExternalLink, Loader2, BarChart } from '@lucide/svelte';
+	import { Copy, QrCode, ExternalLink, Loader2, BarChart, Check } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import FingerprintJS from '@fingerprintjs/fingerprintjs';
 	
@@ -21,6 +21,7 @@
 	} | null = null;
 	let error = '';
 	let fingerprintData: any = null;
+	let copiedItem: string | null = null;
 	
 	onMount(async () => {
 		// Initialize FingerprintJS and collect data
@@ -40,6 +41,9 @@
 	async function generatePixel() {
 		isGenerating = true;
 		error = '';
+		
+		console.log('Starting pixel generation...');
+		console.log('Fingerprint data:', fingerprintData);
 		
 		try {
 			// Collect additional browser data
@@ -74,7 +78,8 @@
 			});
 			
 			if (!response.ok) {
-				throw new Error('Failed to generate pixel');
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to generate pixel');
 			}
 			
 			const data = await response.json();
@@ -83,19 +88,46 @@
 				embedCode: `<img src="${data.trackingUrl}" width="1" height="1" style="display:none" alt="">`
 			};
 		} catch (e) {
-			error = 'Failed to generate pixel. Please try again.';
+			console.error('Pixel generation error:', e);
+			error = e instanceof Error ? e.message : 'Failed to generate pixel. Please try again.';
 		} finally {
 			isGenerating = false;
 		}
 	}
 	
-	async function copyToClipboard(text: string) {
+	async function copyToClipboard(text: string, itemName: string) {
 		try {
 			await navigator.clipboard.writeText(text);
+			copiedItem = itemName;
+			setTimeout(() => {
+				copiedItem = null;
+			}, 2000);
 		} catch (e) {
 			console.error('Failed to copy:', e);
 		}
 	}
+
+	async function copyPixelImage() {
+		try {
+			// Fetch the PNG image
+			const response = await fetch(pixelData.trackingUrl);
+			const blob = await response.blob();
+			
+			// Create a ClipboardItem with the PNG
+			const item = new ClipboardItem({ 'image/png': blob });
+			await navigator.clipboard.write([item]);
+			
+			copiedItem = 'image';
+			setTimeout(() => {
+				copiedItem = null;
+			}, 2000);
+		} catch (e) {
+			console.error('Failed to copy image:', e);
+			// Fallback message
+			alert('Unable to copy image. Please right-click and select "Copy Image" instead.');
+		}
+	}
+
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-4xl">
@@ -132,13 +164,20 @@
 					</label>
 					<Select bind:value={expiresIn}>
 						<SelectTrigger class="max-w-md">
-							<SelectValue placeholder="Select expiration" />
+							{#if expiresIn === '24h'}
+								24 hours
+							{:else if expiresIn === '7d'}
+								7 days
+							{:else if expiresIn === '30d'}
+								30 days
+							{:else}
+								Select expiration
+							{/if}
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="24h">24 hours</SelectItem>
 							<SelectItem value="7d">7 days</SelectItem>
-							<SelectItem value="30d">30 days</SelectItem>
-							<SelectItem value="never">Never expire</SelectItem>
+							<SelectItem value="30d">30 days (maximum)</SelectItem>
 						</SelectContent>
 					</Select>
 					<p class="text-sm text-muted-foreground mt-1">
@@ -154,7 +193,7 @@
 
 				<div class="space-y-4">
 					<Button 
-						on:click={generatePixel} 
+						onclick={generatePixel} 
 						disabled={isGenerating}
 						size="lg"
 						class="w-full sm:w-auto"
@@ -168,7 +207,7 @@
 					</Button>
 					
 					<p class="text-xs text-muted-foreground">
-						By clicking "Generate Tracking Pixel", you agree to our <a href="/terms" class="underline hover:no-underline">Terms of Service</a> and consent to the collection of browser fingerprinting data for service improvement and abuse prevention.
+						By clicking "Generate Tracking Pixel", you agree to our <a href="/terms" class="underline hover:no-underline">Terms of Service</a>.
 					</p>
 				</div>
 			</CardContent>
@@ -190,31 +229,78 @@
 				</CardHeader>
 				<CardContent class="space-y-6">
 					<div>
-						<div class="flex items-center justify-between mb-2">
-							<label class="text-sm font-medium">Embed Code</label>
-							<Button
-								variant="ghost"
-								size="sm"
-								on:click={() => copyToClipboard(pixelData.embedCode)}
-							>
-								<Copy class="w-4 h-4 mr-2" />
-								Copy
-							</Button>
+						<div class="mb-2">
+							<span class="text-sm font-medium">How to Add the Tracking Pixel</span>
 						</div>
-						<pre class="bg-muted p-4 rounded-md overflow-x-auto text-sm">
-{pixelData.embedCode}</pre>
+						<div class="bg-muted p-4 rounded-md space-y-4">
+							<div>
+								<p class="text-sm font-medium mb-2">Option 1: Copy pixel image</p>
+								<p class="text-xs text-muted-foreground mb-2">Copy and paste directly into your email composer:</p>
+								<div class="flex items-center gap-4">
+									<div class="relative inline-block">
+										<div class="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"></div>
+										<img 
+											src={pixelData.trackingUrl} 
+											width="1" 
+											height="1" 
+											alt=""
+											class="block"
+											style="min-width: 40px; min-height: 40px;"
+										/>
+									</div>
+									<Button
+										variant="outline"
+										size="sm"
+										onclick={() => copyPixelImage()}
+									>
+										{#if copiedItem === 'image'}
+											<Check class="w-4 h-4 mr-2" />
+											Copied!
+										{:else}
+											<Copy class="w-4 h-4 mr-2" />
+											Copy Pixel
+										{/if}
+									</Button>
+									<span class="text-xs text-muted-foreground">(Pixel shown enlarged)</span>
+								</div>
+							</div>
+							<div>
+								<p class="text-sm font-medium mb-2">Option 2: Insert image by URL</p>
+								<p class="text-xs text-muted-foreground mb-2">Use your email editor's "Insert Image" feature with this URL:</p>
+								<div class="flex items-start gap-2">
+									<code class="bg-background p-2 rounded text-xs flex-1 select-all break-all">{pixelData.trackingUrl}</code>
+									<Button
+										variant="ghost"
+										size="sm"
+										onclick={() => copyToClipboard(pixelData.trackingUrl, 'imgurl')}
+									>
+										{#if copiedItem === 'imgurl'}
+											<Check class="w-4 h-4" />
+										{:else}
+											<Copy class="w-4 h-4" />
+										{/if}
+									</Button>
+								</div>
+							</div>
+						</div>
 					</div>
+
 
 					<div>
 						<div class="flex items-center justify-between mb-2">
-							<label class="text-sm font-medium">Tracking URL</label>
+							<span class="text-sm font-medium">Tracking URL</span>
 							<Button
 								variant="ghost"
 								size="sm"
-								on:click={() => copyToClipboard(pixelData.trackingUrl)}
+								onclick={() => copyToClipboard(pixelData.trackingUrl, 'url')}
 							>
-								<Copy class="w-4 h-4 mr-2" />
-								Copy
+								{#if copiedItem === 'url'}
+									<Check class="w-4 h-4 mr-2" />
+									Copied!
+								{:else}
+									<Copy class="w-4 h-4 mr-2" />
+									Copy
+								{/if}
 							</Button>
 						</div>
 						<code class="bg-muted p-2 rounded text-sm block break-all">
@@ -232,7 +318,7 @@
 							<Button
 								variant="outline"
 								class="flex-1"
-								on:click={() => window.open(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixelData.statsUrl)}`)}
+								onclick={() => window.open(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixelData.statsUrl)}`)}
 							>
 								<QrCode class="w-4 h-4 mr-2" />
 								QR Code
@@ -240,7 +326,7 @@
 							<Button
 								variant="outline"
 								class="flex-1"
-								on:click={() => pixelData = null}
+								onclick={() => pixelData = null}
 							>
 								Generate Another
 							</Button>
@@ -257,4 +343,3 @@
 		</div>
 	{/if}
 </div>
-</script>

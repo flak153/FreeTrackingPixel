@@ -5,19 +5,20 @@ test.describe('Landing Page', () => {
 		await page.goto('/');
 		
 		// Check hero section
-		await expect(page.getByRole('heading', { name: /Track Email Opens with Privacy First/i })).toBeVisible();
+		await expect(page.locator('h1').filter({ hasText: 'Track Email Opens with' })).toBeVisible();
+		await expect(page.getByText('Privacy First')).toBeVisible();
 		await expect(page.getByText('100% Free • No Sign-up Required')).toBeVisible();
 		
-		// Check CTA buttons
-		await expect(page.getByRole('button', { name: 'Generate Free Pixel' })).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Learn More' })).toBeVisible();
+		// Check CTA buttons - they might be links not buttons
+		await expect(page.getByText('Generate Free Pixel').first()).toBeVisible();
+		await expect(page.getByText('Learn More').first()).toBeVisible();
 	});
 
 	test('should navigate to generate page', async ({ page }) => {
 		await page.goto('/');
 		
 		// Click generate button
-		await page.getByRole('button', { name: 'Generate Free Pixel' }).first().click();
+		await page.getByText('Generate Free Pixel').first().click();
 		
 		// Should navigate to generate page
 		await expect(page).toHaveURL('/generate');
@@ -44,10 +45,10 @@ test.describe('Landing Page', () => {
 		// Check section title
 		await expect(page.getByRole('heading', { name: 'How It Works' })).toBeVisible();
 		
-		// Check steps
-		await expect(page.getByText('Generate Pixel')).toBeVisible();
-		await expect(page.getByText('Embed in Email')).toBeVisible();
-		await expect(page.getByText('Track Opens')).toBeVisible();
+		// Check steps - these are h3 elements
+		await expect(page.locator('h3').filter({ hasText: 'Generate Pixel' })).toBeVisible();
+		await expect(page.locator('h3').filter({ hasText: 'Embed in Email' })).toBeVisible();
+		await expect(page.locator('h3').filter({ hasText: 'Track Opens' })).toBeVisible();
 		
 		// Check step numbers
 		await expect(page.getByText('1')).toBeVisible();
@@ -59,7 +60,7 @@ test.describe('Landing Page', () => {
 		await page.goto('/');
 		
 		// Click Learn More to scroll to how it works
-		await page.getByRole('button', { name: 'Learn More' }).click();
+		await page.getByText('Learn More').first().click();
 		
 		// Check if scrolled to section
 		await expect(page.getByRole('heading', { name: 'How It Works' })).toBeInViewport();
@@ -72,7 +73,7 @@ test.describe('Landing Page', () => {
 		await expect(page.getByRole('link', { name: 'FreeTrackingPixel' })).toBeVisible();
 		
 		// Test navigation links
-		const generateLink = page.getByRole('navigation').getByRole('button', { name: 'Generate Pixel' });
+		const generateLink = page.getByRole('navigation').getByText('Generate Pixel');
 		await generateLink.click();
 		await expect(page).toHaveURL('/generate');
 		

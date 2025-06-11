@@ -8,12 +8,12 @@ test.describe('Pixel Generation Flow', () => {
 		// Check page loaded
 		await expect(page.getByRole('heading', { name: 'Generate Tracking Pixel' })).toBeVisible();
 		
-		// Fill in the form
-		await page.getByLabel('Label (Optional)').fill('E2E Test Campaign');
+		// Fill in the form - using placeholder to find input
+		await page.getByPlaceholder('e.g., Newsletter Campaign March 2024').fill('E2E Test Campaign');
 		
-		// Select expiration
-		await page.getByRole('combobox').click();
-		await page.getByRole('option', { name: '7 days' }).click();
+		// Select expiration - click the select trigger first
+		await page.locator('[role="combobox"]').click();
+		await page.locator('[role="option"]').filter({ hasText: '7 days' }).click();
 		
 		// Check terms of service text is visible
 		await expect(page.getByText(/By clicking "Generate Tracking Pixel"/)).toBeVisible();
@@ -22,11 +22,11 @@ test.describe('Pixel Generation Flow', () => {
 		await page.getByRole('button', { name: 'Generate Tracking Pixel' }).click();
 		
 		// Wait for success
-		await expect(page.getByText('Your tracking pixel has been generated successfully!')).toBeVisible();
+		await expect(page.getByText('Your tracking pixel has been generated successfully')).toBeVisible();
 		
 		// Check embed code is shown
 		await expect(page.getByText('Embed Code')).toBeVisible();
-		await expect(page.getByText(/img src=/)).toBeVisible();
+		await expect(page.locator('pre').filter({ hasText: '<img src=' })).toBeVisible();
 		
 		// Check buttons are present
 		await expect(page.getByRole('button', { name: 'View Stats Dashboard' })).toBeVisible();

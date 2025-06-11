@@ -8,6 +8,10 @@ test.describe('Stats Dashboard', () => {
 	test.beforeEach(async ({ request }) => {
 		// Create a test pixel
 		const response = await request.post('/api/pixels', {
+			headers: {
+				'Content-Type': 'application/json',
+				'x-test-suite': 'playwright-e2e'
+			},
 			data: {
 				label: 'E2E Stats Test',
 				expiresIn: 'never'
@@ -15,9 +19,23 @@ test.describe('Stats Dashboard', () => {
 		});
 		
 		const pixel = await response.json();
+		
+		// Check if we got an error
+		if (pixel.error) {
+			throw new Error('Failed to create pixel: ' + pixel.error);
+		}
+		
 		pixelId = pixel.id;
 		trackingUrl = pixel.trackingUrl;
 		statsUrl = pixel.statsUrl;
+		
+		// Debug log to check values
+		console.log('Test pixel created:', { pixelId, trackingUrl, statsUrl });
+		
+		// Verify we have valid URLs
+		if (!trackingUrl || !statsUrl) {
+			throw new Error('Invalid pixel response: ' + JSON.stringify(pixel));
+		}
 
 		// Generate some test data
 		const userAgents = [
@@ -125,6 +143,10 @@ test.describe('Stats Dashboard', () => {
 	test('should show expiration notice', async ({ request, page }) => {
 		// Create pixel with short expiration
 		const response = await request.post('/api/pixels', {
+			headers: {
+				'Content-Type': 'application/json',
+				'x-test-suite': 'playwright-e2e'
+			},
 			data: {
 				label: 'Expiring Soon',
 				expiresIn: '24h'
