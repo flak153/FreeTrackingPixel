@@ -23,7 +23,9 @@ export const pixelEvents = pgTable('pixel_events', {
 	browser: varchar('browser', { length: 100 }),
 	os: varchar('os', { length: 100 }),
 	deviceType: varchar('device_type', { length: 50 }), // mobile, tablet, desktop
-	emailClient: varchar('email_client', { length: 100 }) // Gmail, Outlook, Apple Mail, etc.
+	emailClient: varchar('email_client', { length: 100 }), // Gmail, Outlook, Apple Mail, etc.
+	// Track if this is pre-send (setup/compose) or post-send (real open)
+	eventPhase: varchar('event_phase', { length: 20 }).default('open').notNull() // 'setup' or 'open'
 });
 
 export const pixelCreators = pgTable('pixel_creators', {

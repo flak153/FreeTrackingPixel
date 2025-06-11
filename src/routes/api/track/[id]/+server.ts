@@ -116,8 +116,29 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		
 		const isUnique = existingEvent.length === 0;
 		
+		// Determine event phase based on referer
+		// If referer is mail.google.com, this is the "send email" action
+		// After this point, all subsequent events are real opens
+		const hasGmailSendReferer = referer === 'http://mail.google.com/';
+		
+		// Check if we've already seen the "send" event for this pixel
+		const [sendEvent] = await db.select()
+			.from(pixelEvents)
+			.where(
+				and(
+					eq(pixelEvents.pixelId, id),
+					eq(pixelEvents.referer, 'http://mail.google.com/')
+				)
+			)
+			.limit(1);
+		
+		// If we haven't seen a send event yet, this is setup phase
+		// If we have seen a send event, this is a real open
+		// If this IS the send event, mark it as setup (it's the sender viewing)
+		const eventPhase = (!sendEvent || hasGmailSendReferer) ? 'setup' : 'open';
+		
 		// Record the event with enhanced tracking data
-		console.log(`[TRACKING] Recording event - isUnique: ${isUnique}`);
+		console.log(`[TRACKING] Recording event - isUnique: ${isUnique}, eventPhase: ${eventPhase}, referer: ${referer}`);
 		await db.insert(pixelEvents).values({
 			pixelId: id,
 			userAgent,
@@ -130,7 +151,8 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 			emailClient: trackingData.emailClient,
 			countryCode: location.countryCode,
 			city: location.city,
-			region: location.region
+			region: location.region,
+			eventPhase
 		});
 		console.log(`[TRACKING] Event recorded successfully`);
 		

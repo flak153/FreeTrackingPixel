@@ -20,18 +20,24 @@ export const GET: RequestHandler = async ({ params }) => {
 			return json({ error: 'Stats are private' }, { status: 403 });
 		}
 		
-		// Get total opens
+		// Get total opens (only counting real opens, not setup phase)
 		const [totalResult] = await db.select({
 			count: sql<number>`count(*)`
-		}).from(pixelEvents).where(eq(pixelEvents.pixelId, id));
+		}).from(pixelEvents).where(
+			and(
+				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open')
+			)
+		);
 		
-		// Get unique opens
+		// Get unique opens (only counting real opens)
 		const [uniqueResult] = await db.select({
 			count: sql<number>`count(*)`
 		}).from(pixelEvents).where(
 			and(
 				eq(pixelEvents.pixelId, id),
-				eq(pixelEvents.isUnique, true)
+				eq(pixelEvents.isUnique, true),
+				eq(pixelEvents.eventPhase, 'open')
 			)
 		);
 		
@@ -41,7 +47,12 @@ export const GET: RequestHandler = async ({ params }) => {
 			count: sql<number>`count(*)`
 		})
 		.from(pixelEvents)
-		.where(eq(pixelEvents.pixelId, id))
+		.where(
+			and(
+				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open')
+			)
+		)
 		.groupBy(sql`date_trunc('hour', opened_at)`)
 		.orderBy(sql`date_trunc('hour', opened_at)`);
 		
@@ -57,7 +68,12 @@ export const GET: RequestHandler = async ({ params }) => {
 			countryCode: pixelEvents.countryCode
 		})
 		.from(pixelEvents)
-		.where(eq(pixelEvents.pixelId, id))
+		.where(
+			and(
+				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open')
+			)
+		)
 		.orderBy(desc(pixelEvents.openedAt))
 		.limit(10);
 		
@@ -67,7 +83,12 @@ export const GET: RequestHandler = async ({ params }) => {
 			count: sql<number>`count(*)`
 		})
 		.from(pixelEvents)
-		.where(eq(pixelEvents.pixelId, id))
+		.where(
+			and(
+				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open')
+			)
+		)
 		.groupBy(pixelEvents.emailClient)
 		.orderBy(desc(sql`count(*)`));
 		
@@ -77,7 +98,12 @@ export const GET: RequestHandler = async ({ params }) => {
 			count: sql<number>`count(*)`
 		})
 		.from(pixelEvents)
-		.where(eq(pixelEvents.pixelId, id))
+		.where(
+			and(
+				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open')
+			)
+		)
 		.groupBy(pixelEvents.deviceType)
 		.orderBy(desc(sql`count(*)`));
 		
@@ -90,6 +116,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		.where(
 			and(
 				eq(pixelEvents.pixelId, id),
+				eq(pixelEvents.eventPhase, 'open'),
 				sql`${pixelEvents.countryCode} IS NOT NULL`
 			)
 		)
