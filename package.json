@@ -58,6 +58,7 @@
 		"@fingerprintjs/fingerprintjs": "^4.6.2",
 		"@inlang/paraglide-js": "^2.0.0",
 		"@neondatabase/serverless": "^0.10.4",
+		"@netlify/neon": "^0.1.0",
 		"@types/ua-parser-js": "^0.7.39",
 		"drizzle-orm": "^0.40.0",
 		"ua-parser-js": "^2.0.3"

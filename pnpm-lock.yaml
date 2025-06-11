@@ -17,6 +17,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^0.10.4
         version: 0.10.4
+      '@netlify/neon':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@types/ua-parser-js':
         specifier: ^0.7.39
         version: 0.7.39
@@ -742,6 +745,9 @@ packages:
 
   '@neondatabase/serverless@0.10.4':
     resolution: {integrity: sha512-2nZuh3VUO9voBauuh+IGYRhGU/MskWHt1IuZvHcJw6GLjDgtqj/KViKo7SIrLdGLdot7vFbiRRw+BgEy3wT9HA==}
+
+  '@netlify/neon@0.1.0':
+    resolution: {integrity: sha512-7FlZRfpR61iePnwjamH8t8WnF7ZG87a3wnMojvBjfUYlSMGeHxawoFfI7eyqGEeUV7djuiTB8QkxB+XiPw83WA==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3080,6 +3086,10 @@ snapshots:
   '@neondatabase/serverless@0.10.4':
     dependencies:
       '@types/pg': 8.11.6
+
+  '@netlify/neon@0.1.0':
+    dependencies:
+      '@neondatabase/serverless': 0.10.4
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
