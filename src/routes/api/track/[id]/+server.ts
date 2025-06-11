@@ -4,9 +4,9 @@ import { pixels, pixelEvents, pixelCreators } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { parseUserAgent, getLocationFromIP } from '$lib/server/tracking';
 
-// 5x5 blue square - looks like a small bullet point or icon
+// 10x10 blue square - more visible, looks like a bullet point
 const TRACKING_IMAGE = Buffer.from(
-	'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
+	'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVQoU2NkYPhfz0AEYBxVSF9HAAAJWgIB0ePyqgAAAABJRU5ErkJggg==',
 	'base64'
 );
 
@@ -61,6 +61,13 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		console.log(`[TRACKING] Client IP: ${clientIp}`);
 		console.log(`[TRACKING] User Agent: ${userAgent}`);
 		console.log(`[TRACKING] Referer: ${referer}`);
+		
+		// Log all headers to debug Gmail access
+		const headers: Record<string, string> = {};
+		request.headers.forEach((value, key) => {
+			headers[key] = value;
+		});
+		console.log(`[TRACKING] All headers:`, JSON.stringify(headers, null, 2));
 		
 		// Check if this is the pixel creator's machine
 		const [creator] = await db.select()

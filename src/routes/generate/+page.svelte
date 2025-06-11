@@ -85,7 +85,7 @@
 			const data = await response.json();
 			pixelData = {
 				...data,
-				embedCode: `<img src="${data.trackingUrl}" width="5" height="5" alt="" style="border:0">`
+				embedCode: `<img src="${data.trackingUrl}" width="10" height="10" alt="•" title="Email indicator" style="border:0;display:inline-block">`
 			};
 		} catch (e) {
 			console.error('Pixel generation error:', e);
@@ -241,8 +241,8 @@
 										<div class="absolute inset-0 border-2 border-dashed border-blue-500 pointer-events-none"></div>
 										<img 
 											src={pixelData.trackingUrl} 
-											width="5" 
-											height="5" 
+											width="10" 
+											height="10" 
 											alt=""
 											class="block"
 											style="min-width: 40px; min-height: 40px;"
@@ -261,7 +261,7 @@
 											Copy Pixel
 										{/if}
 									</Button>
-									<span class="text-xs text-muted-foreground">(Shown enlarged - displays as small blue square)</span>
+									<span class="text-xs text-muted-foreground">(Shown enlarged - displays as blue bullet point)</span>
 								</div>
 							</div>
 							<div>
