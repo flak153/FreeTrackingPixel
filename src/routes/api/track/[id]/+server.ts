@@ -4,9 +4,9 @@ import { pixels, pixelEvents, pixelCreators } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { parseUserAgent, getLocationFromIP } from '$lib/server/tracking';
 
-// 10x10 blue square - more visible, looks like a bullet point
+// 5x5 blue square - looks like a small bullet point or icon
 const TRACKING_IMAGE = Buffer.from(
-	'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVQoU2NkYPhfz0AEYBxVSF9HAAAJWgIB0ePyqgAAAABJRU5ErkJggg==',
+	'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==',
 	'base64'
 );
 
