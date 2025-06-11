@@ -52,7 +52,11 @@ export const GET: RequestHandler = async ({ params, request, getClientAddress })
 		// Extract tracking information
 		const userAgent = request.headers.get('user-agent') || null;
 		const referer = request.headers.get('referer') || null;
-		const clientIp = getClientAddress();
+		
+		// Get client IP - Netlify provides it in x-nf-client-connection-ip header
+		const clientIp = request.headers.get('x-nf-client-connection-ip') || 
+						request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+						getClientAddress();
 		
 		console.log(`[TRACKING] Client IP: ${clientIp}`);
 		console.log(`[TRACKING] User Agent: ${userAgent}`);

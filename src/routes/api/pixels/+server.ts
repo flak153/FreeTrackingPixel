@@ -23,8 +23,10 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 			}
 		}
 		
-		// Get client IP
-		const clientIp = getClientAddress();
+		// Get client IP - Netlify provides it in x-nf-client-connection-ip header
+		const clientIp = request.headers.get('x-nf-client-connection-ip') || 
+						request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+						getClientAddress();
 		
 		// Rate limiting (skip for tests)
 		if (!isTest) {
